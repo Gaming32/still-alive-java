@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.umjammer:jlayer:1.0.3")
+    implementation("com.tagtraum:ffsampledsp-complete:0.9.53")
     implementation("net.java.dev.jna:jna-platform:5.14.0")
     implementation("com.googlecode.lanterna:lanterna:3.1.2")
 

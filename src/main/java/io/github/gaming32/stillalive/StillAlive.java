@@ -17,11 +17,15 @@ import io.github.gaming32.stillalive.source.ResourceFinder;
 import io.github.gaming32.stillalive.source.SourceMounts;
 import io.github.gaming32.stillalive.steam.SteamGames;
 import io.github.gaming32.stillalive.util.Util;
-import javazoom.jl.player.Player;
 import net.platinumdigitalgroup.jvdf.VDFNode;
 import net.platinumdigitalgroup.jvdf.VDFParser;
 import org.jetbrains.annotations.Contract;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 import javax.swing.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -66,9 +70,21 @@ public class StillAlive {
         if (stillAliveEntry == null) {
             fail("Couldn't find portal_still_alive.mp3");
         }
-        final VolumeControlAudioDevice audioDevice = new VolumeControlAudioDevice();
-        audioDevice.setVolume(0.2f);
-        final Player player = new Player(new ByteArrayInputStream(stillAliveEntry), audioDevice);
+        final AudioInputStream mp3Stream = AudioSystem.getAudioInputStream(new ByteArrayInputStream(stillAliveEntry));
+        final AudioFormat mp3Format = mp3Stream.getFormat();
+        final AudioFormat pcmFormat = new AudioFormat(
+            AudioFormat.Encoding.PCM_SIGNED,
+            mp3Format.getSampleRate(),
+            16,
+            mp3Format.getChannels(),
+            16 * mp3Format.getChannels() / 8,
+            mp3Format.getSampleRate(),
+            mp3Format.isBigEndian()
+        );
+        final AudioInputStream pcmStream = AudioSystem.getAudioInputStream(pcmFormat, mp3Stream);
+        final Clip audioClip = AudioSystem.getClip();
+        audioClip.open(pcmStream);
+        ((FloatControl)audioClip.getControl(FloatControl.Type.MASTER_GAIN)).setValue(20f * (float)Math.log10(0.2));
 
         // TODO: Language choice?
         final byte[] translationsEntry = resourceFinder.findResource("resource", "portal_english", "txt");
@@ -165,7 +181,7 @@ public class StillAlive {
                             songRow = 1;
                             songColumn = 2;
                         }
-                        case START_SONG -> Util.startThread("MusicPlayer", player::play);
+                        case START_SONG -> Util.startThread("MusicPlayer", audioClip::start);
                     }
                 } else if (event instanceof CreditsEvent.CursorEvent cursorEvent) {
                     cursorInCredits = cursorEvent.toCredits();
@@ -197,6 +213,10 @@ public class StillAlive {
                 }
                 screen.refresh();
             }
+        } finally {
+            audioClip.close();
+            pcmStream.close();
+            mp3Stream.close();
         }
     }
 
