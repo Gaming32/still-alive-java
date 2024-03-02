@@ -1,6 +1,9 @@
+import net.raphimc.javadowngrader.gradle.task.DowngradeSourceSetTask
+
 plugins {
     java
     application
+    id("net.raphimc.java-downgrader") version "1.1.1"
 }
 
 group = "io.github.gaming32"
@@ -26,6 +29,12 @@ dependencies {
 application {
     mainClass = "io.github.gaming32.stillalive.StillAlive"
 }
+
+val downgradeMain by tasks.registering(DowngradeSourceSetTask::class) {
+    sourceSet = sourceSets.main
+    dependsOn(tasks.classes)
+}
+tasks.classes.get().finalizedBy(downgradeMain)
 
 tasks.jar {
     manifest {
