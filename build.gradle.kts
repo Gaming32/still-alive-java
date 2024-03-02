@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "io.github.gaming32"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
 repositories {
     mavenCentral()
@@ -24,6 +24,10 @@ dependencies {
     implementation("com.googlecode.lanterna:lanterna:3.1.2")
 
     compileOnly("org.jetbrains:annotations:24.1.0")
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
 application {

@@ -5,4 +5,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "still-alive-java"
+rootProject.name = "still-alive"
