@@ -184,7 +184,7 @@ public class VDFPreprocessor {
         char f = arr[index];
         char s = arr[index + 1];
 
-        return f == '/' && (s == '*' || s == '/');
+        return f == '/' && s == '/';
     }
 
     /**

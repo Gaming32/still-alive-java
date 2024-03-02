@@ -1,7 +1,5 @@
 package io.github.gaming32.stillalive;
 
-import com.connorhaigh.javavpk.core.Archive;
-import com.connorhaigh.javavpk.core.Entry;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
@@ -15,6 +13,8 @@ import com.googlecode.lanterna.terminal.ansi.ANSITerminal;
 import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
 import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration;
+import io.github.gaming32.stillalive.source.ResourceFinder;
+import io.github.gaming32.stillalive.source.SourceMounts;
 import io.github.gaming32.stillalive.steam.SteamGames;
 import io.github.gaming32.stillalive.util.Util;
 import javazoom.jl.player.Player;
@@ -26,14 +26,13 @@ import javax.swing.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class StillAlive {
+    public static final String TITLE = "Still Alive";
     public static final int SCREEN_HEIGHT = 32;
     public static final int SCREEN_HEIGHT_HALF = 16;
     public static final int SCREEN_WIDTH_HALF = 55;
@@ -44,36 +43,39 @@ public class StillAlive {
             fail("Couldn't find Portal installation");
         }
 
-        final Path portalVpkPath = SteamGames.PORTAL_PATH.resolve("portal/portal_pak_dir.vpk");
-        if (!Files.isRegularFile(portalVpkPath)) {
-            fail("Couldn't find portal_pak_dir.vpk at " + portalVpkPath);
+        final ResourceFinder resourceFinder;
+        try {
+            resourceFinder = SourceMounts.mountGame(SteamGames.PORTAL_PATH, SteamGames.PORTAL_PATH.resolve("portal"));
+        } catch (IOException e) {
+            if (System.console() == null) {
+                JOptionPane.showMessageDialog(null, e.toString(), TITLE, JOptionPane.ERROR_MESSAGE);
+            }
+            throw e;
         }
-        final Archive portalVpk = new Archive(portalVpkPath.toFile());
-        portalVpk.load();
 
-        final Entry creditsEntry = Util.findEntry(portalVpk, "scripts", "credits", "txt");
+        final byte[] creditsEntry = resourceFinder.findResource("scripts", "credits", "txt");
         if (creditsEntry == null) {
             fail("Couldn't find credits.txt");
         }
         final VDFNode creditsVdf = new VDFParser()
-            .parse(new String(creditsEntry.readData(), StandardCharsets.UTF_8))
+            .parse(new String(creditsEntry, StandardCharsets.UTF_8))
             .getSubNode("credits.txt");
         final VDFNode creditsParams = creditsVdf.getSubNode("CreditsParams");
 
-        final Entry stillAliveEntry = Util.findEntry(portalVpk, "sound/music", "portal_still_alive", "mp3");
+        final byte[] stillAliveEntry = resourceFinder.findResource("sound/music", "portal_still_alive", "mp3");
         if (stillAliveEntry == null) {
             fail("Couldn't find portal_still_alive.mp3");
         }
         final VolumeControlAudioDevice audioDevice = new VolumeControlAudioDevice();
         audioDevice.setVolume(0.2f);
-        final Player player = new Player(new ByteArrayInputStream(stillAliveEntry.readData()), audioDevice);
+        final Player player = new Player(new ByteArrayInputStream(stillAliveEntry), audioDevice);
 
         // TODO: Language choice?
-        final Path translationsPath = SteamGames.PORTAL_PATH.resolve("portal/resource/portal_english.txt");
-        if (!Files.isRegularFile(translationsPath)) {
-            fail("Couldn't find translations file " + translationsPath);
+        final byte[] translationsEntry = resourceFinder.findResource("resource", "portal_english", "txt");
+        if (translationsEntry == null) {
+            fail("Couldn't find translations file");
         }
-        final Map<String, String> translations = loadTranslations(translationsPath);
+        final Map<String, String> translations = loadTranslations(translationsEntry);
 
         final String[] textColorString = creditsParams.getString("color").split(" ");
         final TextColor bgColor = TextColor.ANSI.BLACK;
@@ -89,7 +91,7 @@ public class StillAlive {
             TerminalScreen screen = new DefaultTerminalFactory()
                 .setUnixTerminalCtrlCBehaviour(UnixLikeTerminal.CtrlCBehaviour.CTRL_C_KILLS_APPLICATION)
                 .setInitialTerminalSize(new TerminalSize(SCREEN_WIDTH_HALF * 2 + 2, SCREEN_HEIGHT + 4))
-                .setTerminalEmulatorTitle("Still Alive")
+                .setTerminalEmulatorTitle(TITLE)
                 .setTerminalEmulatorDeviceConfiguration(new TerminalEmulatorDeviceConfiguration(
                     2000, 500, TerminalEmulatorDeviceConfiguration.CursorStyle.UNDER_BAR, textColor, false
                 ))
@@ -209,9 +211,9 @@ public class StillAlive {
         graphics.drawLine(SCREEN_WIDTH_HALF + 1, SCREEN_HEIGHT_HALF - 1, SCREEN_WIDTH_HALF * 2, SCREEN_HEIGHT_HALF - 1, '_');
     }
 
-    private static Map<String, String> loadTranslations(Path path) throws IOException {
+    private static Map<String, String> loadTranslations(byte[] data) {
         return new VDFParser()
-            .parse(Files.readString(path, StandardCharsets.UTF_16LE))
+            .parse(new String(data, StandardCharsets.UTF_16LE))
             .getSubNode("lang")
             .getSubNode("Tokens")
             .entrySet()
@@ -224,7 +226,7 @@ public class StillAlive {
         if (System.console() != null) {
             System.err.println(message);
         } else {
-            JOptionPane.showMessageDialog(null, message, "Still Alive", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, message, TITLE, JOptionPane.ERROR_MESSAGE);
         }
         System.exit(1);
     }
