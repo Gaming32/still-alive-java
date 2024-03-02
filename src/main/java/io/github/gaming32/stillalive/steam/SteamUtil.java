@@ -50,7 +50,7 @@ public class SteamUtil {
 
         final VDFNode manifest;
         try {
-            manifest = readVdf(STEAM_DIR.resolve("steamapps/appmanifest_" + gameIdStr + ".acf"));
+            manifest = readVdf(libraryPath.resolve("steamapps/appmanifest_" + gameIdStr + ".acf"));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
