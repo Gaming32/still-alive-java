@@ -3,7 +3,7 @@ import net.raphimc.javadowngrader.gradle.task.DowngradeSourceSetTask
 plugins {
     java
     application
-    id("net.raphimc.java-downgrader") version "1.1.1"
+    id("net.raphimc.java-downgrader") version "1.1.2-SNAPSHOT"
 }
 
 group = "io.github.gaming32"
