@@ -11,6 +11,7 @@ import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.graphics.TextImage;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.ansi.ANSITerminal;
 import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
 import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration;
@@ -98,21 +99,18 @@ public class StillAlive {
                 .createScreen()
         ) {
             screen.startScreen();
+            if (screen.getTerminal() instanceof ANSITerminal) {
+                // Disable blink and set cursor to color
+                System.out.printf("\u001b[?12l\u001b]1 2;rgb:%02x/%02x/%02x\u0007", textColor.getRed(), textColor.getGreen(), textColor.getBlue());
+            }
             screen.getTerminal().setBackgroundColor(bgColor);
             screen.getTerminal().setForegroundColor(textColor);
             screen.getTerminal().setCursorVisible(true);
             final TextGraphics graphics = screen.newTextGraphics();
             graphics.setBackgroundColor(bgColor);
             graphics.setForegroundColor(textColor);
-            graphics.drawLine(0, 0, SCREEN_WIDTH_HALF - 1, 0, '-');
-            graphics.drawLine(SCREEN_WIDTH_HALF + 1, 0, SCREEN_WIDTH_HALF * 2, 0, '-');
-            graphics.drawLine(0, 1, 0, SCREEN_HEIGHT - 1, '|');
-            graphics.drawLine(SCREEN_WIDTH_HALF - 1, 1, SCREEN_WIDTH_HALF - 1, SCREEN_HEIGHT - 1, '|');
-            graphics.drawLine(SCREEN_WIDTH_HALF, 1, SCREEN_WIDTH_HALF, SCREEN_HEIGHT_HALF - 1, '|');
-            graphics.drawLine(SCREEN_WIDTH_HALF * 2 + 1, 1, SCREEN_WIDTH_HALF * 2 + 1, SCREEN_HEIGHT_HALF - 1, '|');
-            graphics.drawLine(0, SCREEN_HEIGHT, SCREEN_WIDTH_HALF - 1, SCREEN_HEIGHT, '-');
-            graphics.drawLine(SCREEN_WIDTH_HALF + 1, SCREEN_HEIGHT_HALF - 1, SCREEN_WIDTH_HALF * 2, SCREEN_HEIGHT_HALF - 1, '_');
             screen.setCursorPosition(TerminalPosition.OFFSET_1x1);
+            drawMainBoxes(graphics);
             screen.refresh();
 
             int songRow = 1;
@@ -130,6 +128,9 @@ public class StillAlive {
                     Thread.onSpinWait();
                 }
                 if (screen.getTerminal() instanceof SwingTerminalFrame frame && !frame.isDisplayable()) break;
+                screen.doResizeIfNecessary();
+                screen.pollInput();
+                drawMainBoxes(graphics);
                 if (event instanceof CreditsEvent.CharacterEvent characterEvent) {
                     final char character = characterEvent.character();
                     if (!characterEvent.forCredits()) {
@@ -198,6 +199,17 @@ public class StillAlive {
                 screen.refresh();
             }
         }
+    }
+
+    private static void drawMainBoxes(TextGraphics graphics) {
+        graphics.drawLine(0, 0, SCREEN_WIDTH_HALF - 1, 0, '-');
+        graphics.drawLine(SCREEN_WIDTH_HALF + 1, 0, SCREEN_WIDTH_HALF * 2, 0, '-');
+        graphics.drawLine(0, 1, 0, SCREEN_HEIGHT - 1, '|');
+        graphics.drawLine(SCREEN_WIDTH_HALF - 1, 1, SCREEN_WIDTH_HALF - 1, SCREEN_HEIGHT - 1, '|');
+        graphics.drawLine(SCREEN_WIDTH_HALF, 1, SCREEN_WIDTH_HALF, SCREEN_HEIGHT_HALF - 1, '|');
+        graphics.drawLine(SCREEN_WIDTH_HALF * 2 + 1, 1, SCREEN_WIDTH_HALF * 2 + 1, SCREEN_HEIGHT_HALF - 1, '|');
+        graphics.drawLine(0, SCREEN_HEIGHT, SCREEN_WIDTH_HALF - 1, SCREEN_HEIGHT, '-');
+        graphics.drawLine(SCREEN_WIDTH_HALF + 1, SCREEN_HEIGHT_HALF - 1, SCREEN_WIDTH_HALF * 2, SCREEN_HEIGHT_HALF - 1, '_');
     }
 
     private static Map<String, String> loadTranslations(Path path) throws IOException {
