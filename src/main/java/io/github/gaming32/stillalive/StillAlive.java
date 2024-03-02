@@ -20,7 +20,9 @@ import io.github.gaming32.stillalive.util.Util;
 import javazoom.jl.player.Player;
 import net.platinumdigitalgroup.jvdf.VDFNode;
 import net.platinumdigitalgroup.jvdf.VDFParser;
+import org.jetbrains.annotations.Contract;
 
+import javax.swing.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,22 +41,19 @@ public class StillAlive {
 
     public static void main(String[] args) throws Exception {
         if (SteamGames.PORTAL_PATH == null) {
-            System.err.println("Couldn't find Portal installation");
-            System.exit(1);
+            fail("Couldn't find Portal installation");
         }
 
         final Path portalVpkPath = SteamGames.PORTAL_PATH.resolve("portal/portal_pak_dir.vpk");
         if (!Files.isRegularFile(portalVpkPath)) {
-            System.err.println("Couldn't find portal_pak_dir.vpk at " + portalVpkPath);
-            System.exit(1);
+            fail("Couldn't find portal_pak_dir.vpk at " + portalVpkPath);
         }
         final Archive portalVpk = new Archive(portalVpkPath.toFile());
         portalVpk.load();
 
         final Entry creditsEntry = Util.findEntry(portalVpk, "scripts", "credits", "txt");
         if (creditsEntry == null) {
-            System.err.println("Couldn't find credits.txt");
-            System.exit(1);
+            fail("Couldn't find credits.txt");
         }
         final VDFNode creditsVdf = new VDFParser()
             .parse(new String(creditsEntry.readData(), StandardCharsets.UTF_8))
@@ -63,8 +62,7 @@ public class StillAlive {
 
         final Entry stillAliveEntry = Util.findEntry(portalVpk, "sound/music", "portal_still_alive", "mp3");
         if (stillAliveEntry == null) {
-            System.err.println("Couldn't find portal_still_alive.mp3");
-            System.exit(1);
+            fail("Couldn't find portal_still_alive.mp3");
         }
         final VolumeControlAudioDevice audioDevice = new VolumeControlAudioDevice();
         audioDevice.setVolume(0.2f);
@@ -73,8 +71,7 @@ public class StillAlive {
         // TODO: Language choice?
         final Path translationsPath = SteamGames.PORTAL_PATH.resolve("portal/resource/portal_english.txt");
         if (!Files.isRegularFile(translationsPath)) {
-            System.err.println("Couldn't find translations file " + translationsPath);
-            System.exit(1);
+            fail("Couldn't find translations file " + translationsPath);
         }
         final Map<String, String> translations = loadTranslations(translationsPath);
 
@@ -220,5 +217,15 @@ public class StillAlive {
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> (String)e.getValue()[0], (a, b) -> b, LinkedHashMap::new));
+    }
+
+    @Contract("_ -> fail")
+    private static void fail(String message) {
+        if (System.console() != null) {
+            System.err.println(message);
+        } else {
+            JOptionPane.showMessageDialog(null, message, "Still Alive", JOptionPane.ERROR_MESSAGE);
+        }
+        System.exit(1);
     }
 }
