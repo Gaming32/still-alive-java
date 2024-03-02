@@ -233,12 +233,19 @@ public class StillAlive {
 
     private static Map<String, String> loadTranslations(byte[] data) {
         return new VDFParser()
-            .parse(new String(data, StandardCharsets.UTF_16LE))
+            .parse(removeBom(new String(data, StandardCharsets.UTF_16LE)))
             .getSubNode("lang")
             .getSubNode("Tokens")
             .entrySet()
             .stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> (String)e.getValue()[0], (a, b) -> b, LinkedHashMap::new));
+    }
+
+    private static String removeBom(String text) {
+        if (text.startsWith("\ufeff")) {
+            return text.substring(1);
+        }
+        return text;
     }
 
     @Contract("_ -> fail")

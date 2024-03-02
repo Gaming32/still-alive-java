@@ -86,7 +86,7 @@ public class SourceMounts {
 
             final Path targetPath;
             if (target.startsWith(GAMEINFO_PATH)) {
-                targetPath = engineDir.resolve(target.substring(GAMEINFO_PATH.length()));
+                targetPath = gameDir.resolve(target.substring(GAMEINFO_PATH.length()));
             } else if (target.startsWith(ALL_SOURCE_ENGINE_PATHS)) {
                 targetPath = engineDir.resolve(target.substring(ALL_SOURCE_ENGINE_PATHS.length()));
             } else {
